@@ -1,0 +1,48 @@
+language: objective-c
+osx_image: xcode9
+before_install:
+  - brew uninstall carthage
+  - HOMEBREW_NO_AUTO_UPDATE=1 brew install https://raw.githubusercontent.com/Homebrew/homebrew-core/6ae4f69a652fb0ecb102b0c9216378679a4f1b92/Formula/carthage.rb # 0.22.0
+install: true
+branches:
+  only:
+    - master
+    # Credit: @Omnikron13, https://github.com/mojombo/semver/issues/32
+    - /^(\d+\.\d+\.\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
+    - /^hotfix-(\d+\.\d+\.\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/
+cache:
+  directories:
+    - $HOME/Library/Caches/org.carthage.CarthageKit/dependencies
+    - Carthage/Build
+
+jobs:
+  include:
+    - osx_image: xcode9
+      script:
+        - XCODE_SCHEME=FlexibleDiff
+          XCODE_SDK=macosx
+          XCODE_ACTION="build test"
+          XCODE_DESTINATION="arch=x86_64"
+          script/build
+        - XCODE_SCHEME=FlexibleDiff
+          XCODE_SDK=iphonesimulator
+          XCODE_ACTION="build-for-testing test-without-building"
+          XCODE_DESTINATION="platform=iOS Simulator,name=iPhone 6s"
+          script/build
+        - XCODE_SCHEME=FlexibleDiff
+          XCODE_SDK=appletvsimulator
+          XCODE_ACTION="build-for-testing test-without-building"
+          XCODE_DESTINATION="platform=tvOS Simulator,name=Apple TV 1080p"
+          script/build
+        - XCODE_SCHEME=FlexibleDiff
+          XCODE_SDK=watchsimulator
+          XCODE_ACTION=build
+          XCODE_DESTINATION="platform=watchOS Simulator,name=Apple Watch - 38mm,OS=2.2"
+          script/build
+    - script:
+        - pod repo update --silent
+        - pod lib lint FlexibleDiff.podspec
+      env:
+        - JOB=PODSPEC
+    - stage: carthage
+      script: carthage build --cache-builds --no-skip-current
