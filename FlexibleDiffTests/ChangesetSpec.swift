@@ -518,6 +518,30 @@ class ChangesetSpec: QuickSpec {
 					                 identifier: { $0.key }))
 						== Changeset(mutations: [1, 3])
 				}
+
+				it("should reflect contiguous mutations that were affected by a removal") {
+					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
+					                            Pair(key: "k2", value: "v2_old"),
+					                            Pair(key: "k3", value: "v3_old"),
+					                            Pair(key: "k4", value: "v4_old")],
+					                 current: [Pair(key: "k2", value: "v2_new"),
+					                           Pair(key: "k3", value: "v3_new"),
+					                           Pair(key: "k4", value: "v4_new")],
+					                 identifier: { $0.key }))
+						== Changeset(removals: [0], mutations: [1, 2, 3])
+				}
+
+				it("should reflect contiguous mutations that were affected by an insertion") {
+					expect(Changeset(previous: [Pair(key: "k2", value: "v2_old"),
+					                            Pair(key: "k3", value: "v3_old"),
+					                            Pair(key: "k4", value: "v4_old")],
+					                 current: [Pair(key: "k1", value: "v1"),
+					                           Pair(key: "k2", value: "v2_new"),
+					                           Pair(key: "k3", value: "v3_new"),
+					                           Pair(key: "k4", value: "v4_new")],
+					                 identifier: { $0.key }))
+						== Changeset(inserts: [0], mutations: [0, 1, 2])
+				}
 			}
 
 			// Move tests are disabled for now, until the algorithm has been updated to
@@ -644,6 +668,17 @@ class ChangesetSpec: QuickSpec {
 			}
 		}
 	}
+}
+
+precedencegroup PairPrecedence {
+	associativity: left
+	higherThan: AssignmentPrecedence
+}
+
+infix operator -->: PairPrecedence
+
+private func --> <Key, Value>(key: Key, value: Value) -> Pair<Key, Value> {
+	return Pair(key: key, value: value)
 }
 
 private func reproducibilityTest<C: RangeReplaceableCollection>(

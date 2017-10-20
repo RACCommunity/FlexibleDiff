@@ -276,7 +276,7 @@ public struct Changeset {
 			var path = MovePath(source: range.upperBound, destination: range.lowerBound)
 			while path.destination < newCount, movePaths.remove(path) != nil {
 				if isMoveMutating[path]! {
-					mutations.insert(path.destination)
+					mutations.insert(path.source)
 				}
 
 				path = path.shifted(by: 1)
@@ -288,7 +288,7 @@ public struct Changeset {
 			var path = MovePath(source: range.lowerBound, destination: range.upperBound)
 			while path.destination < newCount, movePaths.remove(path) != nil {
 				if isMoveMutating[path]! {
-					mutations.insert(path.destination)
+					mutations.insert(path.source)
 				}
 
 				path = path.shifted(by: 1)
