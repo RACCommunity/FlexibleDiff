@@ -27,32 +27,36 @@ import Foundation
 ///    var elements = previous
 ///    ```
 ///
-/// 2. Copy mutated elements specified by `mutations`.
+/// 2. Obtain all insertion and removal offsets, including move offsets.
 ///
-///    `mutations` offsets are invariant. So it can simply be conducted as:
 ///    ```
-///    for range in changeset.mutations.rangeView {
-///        elements[range] = current[range]
-///    }
+///    let removals = changeset.removals.union(IndexSet(changeset.moves.map { $0.source }))
+///    let inserts = changeset.inserts.union(IndexSet(changeset.moves.map { $0.destination }))
 ///    ```
 ///
 /// 3. Perform removals specified by `removals` and `moves` (sources).
 ///
 ///    ```
-///    let removals = changeset.removals
-///        .union(IndexSet(changeset.moves.map { $0.source }))
-///
 ///    for range in removals.rangeView.reversed() {
 ///        elements.removeSubrange(range)
 ///    }
 ///    ```
 ///
-/// 4. Perform inserts specified by `inserts` and `moves` (destinations).
+/// 4. Copy mutated elements specified by `mutations`.
 ///
 ///    ```
-///    let inserts = changeset.inserts
-///        .union(IndexSet(changeset.moves.map { $0.destination }))
+///    for range in changeset.mutations.rangeView {
+///        let removalOffset = removals.count(in: 0 ..< range.lowerBound)
+///        let insertionOffset = inserts.count(in: 0 ... range.lowerBound)
+///        let dest = range.lowerBound - removalOffset ..< range.upperBound - removalOffset
+///        let source = range.lowerBound - removalOffset + insertionOffset ..< range.upperBound - removalOffset + insertionOffset
+///        elements[dest] = current[source]
+///    }
+///    ```
 ///
+/// 5. Perform inserts specified by `inserts` and `moves` (destinations).
+///
+///    ```
 ///    for range in inserts.rangeView {
 ///        elements.insert(contentsOf: current[range], at: range.lowerBound)
 ///    }
@@ -74,28 +78,27 @@ public struct Changeset {
 	///
 	/// - important: To obtain the actual index, you must apply
 	///              `Collection.index(self:_:offsetBy:)` on the current version, the
-	///              start index and the offset.
+	///              start index and the inserting offset.
 	public var inserts = IndexSet()
 
 	/// The offsets of removed elements in the previous version of the collection.
 	///
 	/// - important: To obtain the actual index, you must apply
 	///              `Collection.index(self:_:offsetBy:)` on the previous version, the
-	///              start index and the offset.
+	///              start index and the removal offset.
 	public var removals = IndexSet()
 
-	/// The offsets of position-invariant mutations that are valid across both versions
-	/// of the collection.
+	/// The offsets of mutations with regard to the previous version of the collection.
 	///
-	/// `mutations` only implies an invariant relative position. The actual indexes can
-	/// be different, depending on the collection type.
+	/// `mutations` only implies an invariant relative position. The actual offset in the
+	/// current version of collection is affected by any preceding removal and inserts.
 	///
 	/// If an element has both changed and moved, it is instead included in `moves` with
 	/// an asserted mutation flag.
 	///
 	/// - important: To obtain the actual index, you must apply
-	///              `Collection.index(self:_:offsetBy:)` on the relevant versions, the
-	///              start index and the offset.
+	///              `Collection.index(self:_:offsetBy:)` on the previous version with the
+	///              start index and the mutation offset.
 	public var mutations = IndexSet()
 
 	/// The offset pairs of moves with a mutation flag as the associated value.
@@ -105,7 +108,7 @@ public struct Changeset {
 	///
 	/// - important: To obtain the actual index, you must apply
 	///              `Collection.index(self:_:offsetBy:)` on the relevant versions, the
-	///              start index and the offset.
+	///              start index and the move offsets.
 	public var moves = [Move]()
 
 	public init() {}

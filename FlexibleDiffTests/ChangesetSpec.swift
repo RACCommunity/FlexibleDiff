@@ -520,27 +520,61 @@ class ChangesetSpec: QuickSpec {
 				}
 
 				it("should reflect contiguous mutations that were affected by a removal") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4_old")],
-					                 current: [Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4_new")],
-					                 identifier: { $0.key }))
-						== Changeset(removals: [0], mutations: [1, 2, 3])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(removals: [0], mutations: [1, 2, 3]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous mutations that were affected by an insertion") {
-					expect(Changeset(previous: [Pair(key: "k2", value: "v2_old"),
+					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
 					                            Pair(key: "k3", value: "v3_old"),
 					                            Pair(key: "k4", value: "v4_old")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4_new")],
-					                 identifier: { $0.key }))
-						== Changeset(inserts: [0], mutations: [0, 1, 2])
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(inserts: [0], mutations: [0, 1, 2]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutations that were affected by a removal followed by a move") {
+					diffTest(previous: [Pair(key: "k0", value: "v0"),
+					                    Pair(key: "k1", value: "v1_old"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old")],
+					         current: [Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k1", value: "v1_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(removals: [0],
+					                             moves: [Changeset.Move(source: 1, destination: 2, isMutated: true),
+					                                     Changeset.Move(source: 3, destination: 1, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 0, isMutated: true)]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutations that were affected by an insertion followed by a move") {
+					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k4", value: "v4_new"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(inserts: [0],
+					                             moves: [Changeset.Move(source: 0, destination: 2, isMutated: true),
+					                                     Changeset.Move(source: 1, destination: 3, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 1, isMutated: true)]),
+					         areEqual: ==)
 				}
 			}
 
@@ -681,6 +715,21 @@ private func --> <Key, Value>(key: Key, value: Value) -> Pair<Key, Value> {
 	return Pair(key: key, value: value)
 }
 
+private func diffTest<C: RangeReplaceableCollection>(
+	previous: C,
+	current: C,
+	computed changeset: (C, C) -> Changeset,
+	expected expectedChangeset: Changeset,
+	areEqual: (@escaping (C.Iterator.Element, C.Iterator.Element) -> Bool),
+	file: FileString = #file,
+	line: UInt = #line
+) where C.Iterator.Element: Equatable {
+	let changeset = changeset(previous, current)
+	expect(changeset, file: file, line: line) == expectedChangeset
+	reproducibilityTest(applying: changeset, to: previous, expecting: current, areEqual: areEqual, file: file, line: line)
+}
+
+
 private func reproducibilityTest<C: RangeReplaceableCollection>(
 	applying changeset: Changeset,
 	to previous: C,
@@ -704,27 +753,30 @@ private func reproducibilityTest<C: RangeReplaceableCollection>(
 
 	// Move offset pairs are only a hint for animation and optimization. They are
 	// semantically equivalent to a removal offset paired with an insertion offset.
-
-	// (1) Copy position invariant mutations.
-	for range in changeset.mutations.rangeView {
-		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
-		let upperBound = values.index(lowerBound, offsetBy: C.IndexDistance(range.count))
-		let copyLowerBound = current.index(current.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
-		let copyUpperBound = current.index(copyLowerBound, offsetBy: C.IndexDistance(range.count))
-		values.replaceSubrange(lowerBound ..< upperBound,
-		                       with: current[copyLowerBound ..< copyUpperBound])
-	}
-
-	// (2) Perform removals (including move sources).
 	let removals = changeset.removals.union(IndexSet(changeset.moves.lazy.map { $0.source }))
+	let inserts = changeset.inserts.union(IndexSet(changeset.moves.lazy.map { $0.destination }))
+
+	// (1) Perform removals (including move sources).
 	for range in removals.rangeView.reversed() {
 		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
 		let upperBound = values.index(lowerBound, offsetBy: C.IndexDistance(range.count))
 		values.removeSubrange(lowerBound ..< upperBound)
 	}
 
+	// (2) Copy position invariant mutations.
+	for range in changeset.mutations.rangeView {
+		let removalOffset = removals.count(in: 0 ..< range.lowerBound)
+		let insertOffset = inserts.count(in: 0 ... range.lowerBound)
+
+		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound - removalOffset))
+		let upperBound = values.index(lowerBound, offsetBy: C.IndexDistance(range.count))
+		let copyLowerBound = current.index(current.startIndex, offsetBy: C.IndexDistance(range.lowerBound - removalOffset + insertOffset))
+		let copyUpperBound = current.index(copyLowerBound, offsetBy: C.IndexDistance(range.count))
+		values.replaceSubrange(lowerBound ..< upperBound,
+		                       with: current[copyLowerBound ..< copyUpperBound])
+	}
+
 	// (3) Perform insertions (including move destinations).
-	let inserts = changeset.inserts.union(IndexSet(changeset.moves.lazy.map { $0.destination }))
 	for range in inserts.rangeView {
 		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
 		let copyLowerBound = current.index(current.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
@@ -775,12 +827,16 @@ private extension RangeReplaceableCollection {
 
 private class ObjectValue {}
 
-private struct Pair<Key: Hashable, Value: Equatable>: Hashable {
+private struct Pair<Key: Hashable, Value: Equatable>: Hashable, CustomStringConvertible {
 	var key: Key
 	var value: Value
 
 	var hashValue: Int {
 		return key.hashValue
+	}
+
+	var description: String {
+		return "\(key) --> \(value)"
 	}
 
 	init(key: Key, value: Value) {
