@@ -27,6 +27,14 @@ import Foundation
 ///    var elements = previous
 ///    ```
 ///
+/// 2. Copy the position invariant mutations.
+///
+///    ```
+///    for offset in changeset.mutations {
+///        elements[offset] = current[offset]
+///    }
+///    ```
+///
 /// 2. Obtain all insertion and removal offsets, including move offsets.
 ///
 ///    ```
@@ -39,18 +47,6 @@ import Foundation
 ///    ```
 ///    for range in removals.rangeView.reversed() {
 ///        elements.removeSubrange(range)
-///    }
-///    ```
-///
-/// 4. Copy mutated elements specified by `mutations`.
-///
-///    ```
-///    for range in changeset.mutations.rangeView {
-///        let removalOffset = removals.count(in: 0 ..< range.lowerBound)
-///        let insertionOffset = inserts.count(in: 0 ... range.lowerBound)
-///        let dest = range.lowerBound - removalOffset ..< range.upperBound - removalOffset
-///        let source = range.lowerBound - removalOffset + insertionOffset ..< range.upperBound - removalOffset + insertionOffset
-///        elements[dest] = current[source]
 ///    }
 ///    ```
 ///
@@ -88,17 +84,18 @@ public struct Changeset {
 	///              start index and the removal offset.
 	public var removals = IndexSet()
 
-	/// The offsets of mutations with regard to the previous version of the collection.
+	/// The offsets of position-invariant mutations that are valid across both versions
+	/// of the collection.
 	///
-	/// `mutations` only implies an invariant relative position. The actual offset in the
-	/// current version of collection is affected by any preceding removal and inserts.
+	/// `mutations` only implies an invariant relative position. The actual indexes can
+	/// be different, depending on the collection type.
 	///
 	/// If an element has both changed and moved, it is instead included in `moves` with
 	/// an asserted mutation flag.
 	///
 	/// - important: To obtain the actual index, you must apply
-	///              `Collection.index(self:_:offsetBy:)` on the previous version with the
-	///              start index and the mutation offset.
+	///              `Collection.index(self:_:offsetBy:)` on the relevant versions, the
+	///              start index and the offset.
 	public var mutations = IndexSet()
 
 	/// The offset pairs of moves with a mutation flag as the associated value.
@@ -249,8 +246,7 @@ public struct Changeset {
 		}
 
 		// Pass 8: Compute mutations and moves.
-		var movePaths: Set<MovePath> = []
-		var isMoveMutating: [MovePath: Bool] = [:]
+		var movePaths: [MovePath: Bool] = [:]
 
 		for newPosition in 0 ..< newCount {
 			guard case let .remote(oldPosition) = newReferences[newPosition] else {
@@ -263,8 +259,7 @@ public struct Changeset {
 
 			if newPosition - oldPosition != 0 {
 				let path = MovePath(source: oldPosition, destination: newPosition)
-				movePaths.insert(path)
-				isMoveMutating[path] = isMutated
+				movePaths[path] = isMutated
 			} else if isMutated {
 				mutations.insert(oldPosition)
 			}
@@ -274,24 +269,24 @@ public struct Changeset {
 		// conservative and care about only one contiguous block immediately following the
 		// deletion or the insertion.
 
-		// Pass 9: Eliminating removal-caused moves.
+		// Pass 9: Eliminating removal-caused immutable moves.
 		for range in removals.rangeView {
 			var path = MovePath(source: range.upperBound, destination: range.lowerBound)
-			while path.destination < newCount, movePaths.remove(path) != nil {
-				if isMoveMutating[path]! {
-					mutations.insert(path.source)
+			while path.destination < newCount, let isMutated = movePaths[path] {
+				if !isMutated {
+					movePaths.removeValue(forKey: path)
 				}
 
 				path = path.shifted(by: 1)
 			}
 		}
 
-		// Pass 10: Eliminating insertion-caused moves.
+		// Pass 10: Eliminating insertion-caused immutable moves.
 		for range in inserts.rangeView {
 			var path = MovePath(source: range.lowerBound, destination: range.upperBound)
-			while path.destination < newCount, movePaths.remove(path) != nil {
-				if isMoveMutating[path]! {
-					mutations.insert(path.source)
+			while path.destination < newCount, let isMutated = movePaths[path] {
+				if !isMutated {
+					movePaths.removeValue(forKey: path)
 				}
 
 				path = path.shifted(by: 1)
@@ -299,11 +294,7 @@ public struct Changeset {
 		}
 
 		// Pass 11: Forge the move results.
-		moves = movePaths.map { path in
-			return Changeset.Move(source: path.source,
-			                      destination: path.destination,
-			                      isMutated: isMoveMutating[path]!)
-		}
+		moves = movePaths.map { Changeset.Move(source: $0.source, destination: $0.destination, isMutated: $1) }
 	}
 
 	/// Compute the difference of `self` with regard to `old` by value equality.
@@ -466,7 +457,7 @@ private struct MovePath: Hashable {
 		let sum = source + destination
 		return (sum * (sum + 1)) >> 1 + destination
 	}
-
+	
 	func shifted(by offset: Int) -> MovePath {
 		return MovePath(source: source + offset, destination: destination + offset)
 	}
@@ -493,7 +484,8 @@ extension IndexSet {
 
 extension Changeset.Move: Hashable {
 	public var hashValue: Int {
-		return source + destination
+		let sum = source + destination
+		return (sum * (sum + 1)) >> 1 + destination
 	}
 
 	public static func == (left: Changeset.Move, right: Changeset.Move) -> Bool {

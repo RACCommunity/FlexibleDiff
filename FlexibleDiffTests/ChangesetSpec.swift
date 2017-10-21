@@ -576,64 +576,6 @@ class ChangesetSpec: QuickSpec {
 					         expected: Changeset(mutations: [1, 3]),
 					         areEqual: ==)
 				}
-
-				it("should reflect contiguous mutations that were affected by a removal") {
-					diffTest(previous: [Pair(key: "k1", value: "v1"),
-					                    Pair(key: "k2", value: "v2_old"),
-					                    Pair(key: "k3", value: "v3_old"),
-					                    Pair(key: "k4", value: "v4_old")],
-					         current: [Pair(key: "k2", value: "v2_new"),
-					                   Pair(key: "k3", value: "v3_new"),
-					                   Pair(key: "k4", value: "v4_new")],
-					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
-					         expected: Changeset(removals: [0], mutations: [1, 2, 3]),
-					         areEqual: ==)
-				}
-
-				it("should reflect contiguous mutations that were affected by an insertion") {
-					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
-					                    Pair(key: "k3", value: "v3_old"),
-					                    Pair(key: "k4", value: "v4_old")],
-					         current: [Pair(key: "k1", value: "v1"),
-					                   Pair(key: "k2", value: "v2_new"),
-					                   Pair(key: "k3", value: "v3_new"),
-					                   Pair(key: "k4", value: "v4_new")],
-					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
-					         expected: Changeset(inserts: [0], mutations: [0, 1, 2]),
-					         areEqual: ==)
-				}
-
-				it("should reflect contiguous mutations that were affected by a removal followed by a move") {
-					diffTest(previous: [Pair(key: "k0", value: "v0"),
-					                    Pair(key: "k1", value: "v1_old"),
-					                    Pair(key: "k2", value: "v2_old"),
-					                    Pair(key: "k3", value: "v3_old")],
-					         current: [Pair(key: "k2", value: "v2_new"),
-					                   Pair(key: "k3", value: "v3_new"),
-					                   Pair(key: "k1", value: "v1_new")],
-					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
-					         expected: Changeset(removals: [0],
-					                             moves: [Changeset.Move(source: 1, destination: 2, isMutated: true),
-					                                     Changeset.Move(source: 3, destination: 1, isMutated: true),
-					                                     Changeset.Move(source: 2, destination: 0, isMutated: true)]),
-					         areEqual: ==)
-				}
-
-				it("should reflect contiguous mutations that were affected by an insertion followed by a move") {
-					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
-					                    Pair(key: "k3", value: "v3_old"),
-					                    Pair(key: "k4", value: "v4_old")],
-					         current: [Pair(key: "k1", value: "v1"),
-					                   Pair(key: "k4", value: "v4_new"),
-					                   Pair(key: "k2", value: "v2_new"),
-					                   Pair(key: "k3", value: "v3_new")],
-					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
-					         expected: Changeset(inserts: [0],
-					                             moves: [Changeset.Move(source: 0, destination: 2, isMutated: true),
-					                                     Changeset.Move(source: 1, destination: 3, isMutated: true),
-					                                     Changeset.Move(source: 2, destination: 1, isMutated: true)]),
-					         areEqual: ==)
-				}
 			}
 
 			// Move tests are disabled for now, until the algorithm has been updated to
@@ -659,6 +601,70 @@ class ChangesetSpec: QuickSpec {
 					                                     Changeset.Move(source: 0, destination: 1, isMutated: false),
 					                                     Changeset.Move(source: 1, destination: 2, isMutated: false),
 					                                     Changeset.Move(source: 2, destination: 3, isMutated: false)]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutated moves that were affected by a removal") {
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(removals: [0],
+					                             moves: [Changeset.Move(source: 1, destination: 0, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 1, isMutated: true),
+					                                     Changeset.Move(source: 3, destination: 2, isMutated: true)]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutated moves that were affected by an insertion") {
+					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(inserts: [0],
+					                             moves: [Changeset.Move(source: 0, destination: 1, isMutated: true),
+					                                     Changeset.Move(source: 1, destination: 2, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 3, isMutated: true)]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutated moves that were affected by a removal followed by a move") {
+					diffTest(previous: [Pair(key: "k0", value: "v0"),
+					                    Pair(key: "k1", value: "v1_old"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old")],
+					         current: [Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k1", value: "v1_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(removals: [0],
+					                             moves: [Changeset.Move(source: 1, destination: 2, isMutated: true),
+					                                     Changeset.Move(source: 3, destination: 1, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 0, isMutated: true)]),
+					         areEqual: ==)
+				}
+
+				it("should reflect contiguous mutated moves that were affected by an insertion followed by a move") {
+					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k4", value: "v4_new"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(inserts: [0],
+					                             moves: [Changeset.Move(source: 0, destination: 2, isMutated: true),
+					                                     Changeset.Move(source: 1, destination: 3, isMutated: true),
+					                                     Changeset.Move(source: 2, destination: 1, isMutated: true)]),
 					         areEqual: ==)
 				}
 			}
