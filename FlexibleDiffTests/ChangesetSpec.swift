@@ -286,120 +286,154 @@ class ChangesetSpec: QuickSpec {
 		describe("diffing") {
 			describe("insertions") {
 				it("should reflect an insertion at the beginning") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [10, 0, 1, 2, 3]))
-						== Changeset(inserts: [0])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [10, 0, 1, 2, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [0]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous insertions at the beginning") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [10, 11, 12, 0, 1, 2, 3]))
-						== Changeset(inserts: [0, 1, 2])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [10, 11, 12, 0, 1, 2, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [0, 1, 2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect an insertion in the middle") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 10, 2, 3]))
-						== Changeset(inserts: [2])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 10, 2, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous insertions in the middle") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 10, 11, 12, 2, 3]))
-						== Changeset(inserts: [2, 3, 4])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 10, 11, 12, 2, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [2, 3, 4]),
+					         areEqual: ==)
 				}
 
 				it("should reflect scattered insertions in the middle") {
 					// NOTE: This is not the most ideal changeset.
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 10, 1, 11, 2, 12, 3]))
-						== Changeset(inserts: [1, 3, 5],
-						             moves: [.init(source: 2, destination: 4, isMutated: false),
-						                     .init(source: 3, destination: 6, isMutated: false)])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 10, 1, 11, 2, 12, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [1, 3, 5],
+					                             moves: [.init(source: 2, destination: 4, isMutated: false),
+					                                     .init(source: 3, destination: 6, isMutated: false)]),
+					         areEqual: ==)
 				}
 
 				it("should reflect an insertion at the end") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 2, 3, 10]))
-						== Changeset(inserts: [4])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 2, 3, 10],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [4]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous insertions at the end") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 2, 3, 10, 11, 12]))
-						== Changeset(inserts: [4, 5, 6])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 2, 3, 10, 11, 12],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [4, 5, 6]),
+					         areEqual: ==)
 				}
 
 				it("should detect inserted repeated values") {
-					expect(Changeset(previous: "AAA".characters,
-					                 current: "AAAAA".characters))
-						== Changeset(inserts: [3, 4])
+					diffTest(previous: "AAA".characters,
+					         current: "AAAAA".characters,
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [3, 4]),
+					         areEqual: ==)
 				}
 
 				it("should detect inserted, scattered repeated values") {
 					// NOTE: This is not the most ideal changeset.
-					expect(Changeset(previous: "WAXAYAZ".characters,
-					                 current:  "AWAXAAYAZA".characters))
-						== Changeset(inserts: [5, 7, 9],
-						             moves: [.init(source: 6, destination: 8, isMutated: false),
-						                     .init(source: 1, destination: 0, isMutated: false),
-						                     .init(source: 0, destination: 1, isMutated: false),
-						                     .init(source: 4, destination: 6, isMutated: false),
-						                     .init(source: 2, destination: 3, isMutated: false),
-						                     .init(source: 3, destination: 2, isMutated: false),
-						                     .init(source: 5, destination: 4, isMutated: false)])
+					diffTest(previous: "WAXAYAZ".characters,
+					         current:  "AWAXAAYAZA".characters,
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [5, 7, 9],
+					                             moves: [.init(source: 6, destination: 8, isMutated: false),
+					                                     .init(source: 1, destination: 0, isMutated: false),
+					                                     .init(source: 0, destination: 1, isMutated: false),
+					                                     .init(source: 4, destination: 6, isMutated: false),
+					                                     .init(source: 2, destination: 3, isMutated: false),
+					                                     .init(source: 3, destination: 2, isMutated: false),
+					                                     .init(source: 5, destination: 4, isMutated: false)]),
+					         areEqual: ==)
 				}
 			}
 
 			describe("deletions") {
 				it("should reflect a removal at the beginning") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [1, 2, 3]))
-						== Changeset(removals: [0])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [1, 2, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [0]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous removals at the beginning") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [3]))
-						== Changeset(removals: [0, 1, 2])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [0, 1, 2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect a removal in the middle") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 3]))
-						== Changeset(removals: [2])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 3],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous removals in the middle") {
-					expect(Changeset(previous: [0, 1, 2, 3, 4],
-					                 current: [0, 4]))
-						== Changeset(removals: [1, 2, 3])
+					diffTest(previous: [0, 1, 2, 3, 4],
+					         current: [0, 4],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [1, 2, 3]),
+					         areEqual: ==)
 				}
 
 				it("should reflect scattered contiguous removals in the middle") {
 					// NOTE: This is not the most ideal changeset.
-					expect(Changeset(previous: [0, 1, 2, 3, 4, 5, 6, 7, 8],
-					                 current: [0, 3, 7]))
-						== Changeset(removals: [1, 2, 4, 5, 6, 8],
-						             moves: [.init(source: 7, destination: 2, isMutated: false)])
+					diffTest(previous: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+					         current: [0, 3, 7],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [1, 2, 4, 5, 6, 8],
+					                             moves: [.init(source: 7, destination: 2, isMutated: false)]),
+					         areEqual: ==)
 				}
 
 				it("should reflect a removal at the end") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0, 1, 2]))
-						== Changeset(removals: [3])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0, 1, 2],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [3]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous removals at the end") {
-					expect(Changeset(previous: [0, 1, 2, 3],
-					                 current: [0]))
-						== Changeset(removals: [1, 2, 3])
+					diffTest(previous: [0, 1, 2, 3],
+					         current: [0],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [1, 2, 3]),
+					         areEqual: ==)
 				}
 
 				it("should detect removed repeated values") {
-					expect(Changeset(previous: "AAAAA".characters,
-					                 current: "AAA".characters))
-						== Changeset(removals: [3, 4])
+					diffTest(previous: "AAAAA".characters,
+					         current: "AAA".characters,
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [3, 4]),
+					         areEqual: ==)
 				}
 			}
 
@@ -408,115 +442,123 @@ class ChangesetSpec: QuickSpec {
 				// comparing strategy.
 
 				it("should reflect a mutation at the beginning") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1_old"),
-					                            Pair(key: "k2", value: "v2"),
-					                            Pair(key: "k3", value: "v3")],
-					                 current: [Pair(key: "k1", value: "v1_new"),
-					                           Pair(key: "k2", value: "v2"),
-					                           Pair(key: "k3", value: "v3")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [0])
+					diffTest(previous: [Pair(key: "k1", value: "v1_old"),
+					                    Pair(key: "k2", value: "v2"),
+					                    Pair(key: "k3", value: "v3")],
+					         current: [Pair(key: "k1", value: "v1_new"),
+					                   Pair(key: "k2", value: "v2"),
+					                   Pair(key: "k3", value: "v3")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [0]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous mutations at the beginning") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1_old"),
-					                            Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4")],
-					                 current: [Pair(key: "k1", value: "v1_new"),
-					                           Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [0, 1, 2])
+					diffTest(previous: [Pair(key: "k1", value: "v1_old"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4")],
+					         current: [Pair(key: "k1", value: "v1_new"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [0, 1, 2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect a mutation in the middle") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [2])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous mutations in the middle") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4_old"),
-					                            Pair(key: "k5", value: "v5_old"),
-					                            Pair(key: "k6", value: "v6")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4_new"),
-					                           Pair(key: "k5", value: "v5_new"),
-					                           Pair(key: "k6", value: "v6")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [1, 2, 3, 4])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old"),
+					                    Pair(key: "k5", value: "v5_old"),
+					                    Pair(key: "k6", value: "v6")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new"),
+					                   Pair(key: "k5", value: "v5_new"),
+					                   Pair(key: "k6", value: "v6")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [1, 2, 3, 4]),
+					         areEqual: ==)
 				}
 
 				it("should reflect scattered mutations in the middle") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3"),
-					                            Pair(key: "k4", value: "v4_old"),
-					                            Pair(key: "k5", value: "v5"),
-					                            Pair(key: "k6", value: "v6"),
-					                            Pair(key: "k7", value: "v7_old"),
-					                            Pair(key: "k8", value: "v8")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3"),
-					                           Pair(key: "k4", value: "v4_new"),
-					                           Pair(key: "k5", value: "v5"),
-					                           Pair(key: "k6", value: "v6"),
-					                           Pair(key: "k7", value: "v7_new"),
-					                           Pair(key: "k8", value: "v8")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [1, 3, 6])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3"),
+					                    Pair(key: "k4", value: "v4_old"),
+					                    Pair(key: "k5", value: "v5"),
+					                    Pair(key: "k6", value: "v6"),
+					                    Pair(key: "k7", value: "v7_old"),
+					                    Pair(key: "k8", value: "v8")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3"),
+					                   Pair(key: "k4", value: "v4_new"),
+					                   Pair(key: "k5", value: "v5"),
+					                   Pair(key: "k6", value: "v6"),
+					                   Pair(key: "k7", value: "v7_new"),
+					                   Pair(key: "k8", value: "v8")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [1, 3, 6]),
+					         areEqual: ==)
 				}
 
 				it("should reflect a mutation at the end") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2"),
-					                            Pair(key: "k3", value: "v3_old")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2"),
-					                           Pair(key: "k3", value: "v3_new")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [2])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2"),
+					                    Pair(key: "k3", value: "v3_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2"),
+					                   Pair(key: "k3", value: "v3_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [2]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous mutations at the end") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4_old")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k2", value: "v2_new"),
-					                           Pair(key: "k3", value: "v3_new"),
-					                           Pair(key: "k4", value: "v4_new")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [1, 2, 3])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k2", value: "v2_old"),
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k2", value: "v2_new"),
+					                   Pair(key: "k3", value: "v3_new"),
+					                   Pair(key: "k4", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [1, 2, 3]),
+					         areEqual: ==)
 				}
 
 				it("should detect mutated repeated values") {
-					expect(Changeset(previous: [Pair(key: "k1", value: "v1"),
-					                            Pair(key: "k1", value: "v2_old"),
-					                            Pair(key: "k1", value: "v3"),
-					                            Pair(key: "k1", value: "v4_old")],
-					                 current: [Pair(key: "k1", value: "v1"),
-					                           Pair(key: "k1", value: "v2_new"),
-					                           Pair(key: "k1", value: "v3"),
-					                           Pair(key: "k1", value: "v4_new")],
-					                 identifier: { $0.key }))
-						== Changeset(mutations: [1, 3])
+					diffTest(previous: [Pair(key: "k1", value: "v1"),
+					                    Pair(key: "k1", value: "v2_old"),
+					                    Pair(key: "k1", value: "v3"),
+					                    Pair(key: "k1", value: "v4_old")],
+					         current: [Pair(key: "k1", value: "v1"),
+					                   Pair(key: "k1", value: "v2_new"),
+					                   Pair(key: "k1", value: "v3"),
+					                   Pair(key: "k1", value: "v4_new")],
+					         computed: { Changeset(previous: $0, current: $1, identifier: { $0.key }) },
+					         expected: Changeset(mutations: [1, 3]),
+					         areEqual: ==)
 				}
 
 				it("should reflect contiguous mutations that were affected by a removal") {
@@ -534,8 +576,8 @@ class ChangesetSpec: QuickSpec {
 
 				it("should reflect contiguous mutations that were affected by an insertion") {
 					diffTest(previous: [Pair(key: "k2", value: "v2_old"),
-					                            Pair(key: "k3", value: "v3_old"),
-					                            Pair(key: "k4", value: "v4_old")],
+					                    Pair(key: "k3", value: "v3_old"),
+					                    Pair(key: "k4", value: "v4_old")],
 					         current: [Pair(key: "k1", value: "v1"),
 					                   Pair(key: "k2", value: "v2_new"),
 					                   Pair(key: "k3", value: "v3_new"),
@@ -583,51 +625,59 @@ class ChangesetSpec: QuickSpec {
 
 			describe("moves") {
 				it("should reflect a forward move") {
-					expect(Changeset(previous: [0, 1, 2, 3, 4],
-					                 current: [1, 2, 3, 0, 4]))
-						== Changeset(moves: [Changeset.Move(source: 0, destination: 3, isMutated: false),
-						                     Changeset.Move(source: 3, destination: 2, isMutated: false),
-						                     Changeset.Move(source: 2, destination: 1, isMutated: false),
-						                     Changeset.Move(source: 1, destination: 0, isMutated: false)])
+					diffTest(previous: [0, 1, 2, 3, 4],
+					         current: [1, 2, 3, 0, 4],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(moves: [Changeset.Move(source: 0, destination: 3, isMutated: false),
+					                                     Changeset.Move(source: 3, destination: 2, isMutated: false),
+					                                     Changeset.Move(source: 2, destination: 1, isMutated: false),
+					                                     Changeset.Move(source: 1, destination: 0, isMutated: false)]),
+					         areEqual: ==)
 				}
 
 				it("should reflect a backward move") {
-					expect(Changeset(previous: [0, 1, 2, 3, 4],
-					                 current: [3, 0, 1, 2, 4]))
-						== Changeset(moves: [Changeset.Move(source: 3, destination: 0, isMutated: false),
-						                     Changeset.Move(source: 0, destination: 1, isMutated: false),
-						                     Changeset.Move(source: 1, destination: 2, isMutated: false),
-						                     Changeset.Move(source: 2, destination: 3, isMutated: false)])
+					diffTest(previous: [0, 1, 2, 3, 4],
+					         current: [3, 0, 1, 2, 4],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(moves: [Changeset.Move(source: 3, destination: 0, isMutated: false),
+					                                     Changeset.Move(source: 0, destination: 1, isMutated: false),
+					                                     Changeset.Move(source: 1, destination: 2, isMutated: false),
+					                                     Changeset.Move(source: 2, destination: 3, isMutated: false)]),
+					         areEqual: ==)
 				}
 			}
 
 			describe("removals and moves") {
 				it("should reflect a forward move and a removal") {
-					expect(Changeset(previous: [0, 1, 2, 3, 4],
-					                 current: [2, 3, 0, 4]))
-						== Changeset(removals: [1],
-						             moves: [Changeset.Move(source: 0, destination: 2, isMutated: false),
-						                     Changeset.Move(source: 2, destination: 0, isMutated: false),
-						                     Changeset.Move(source: 3, destination: 1, isMutated: false),
-						                     Changeset.Move(source: 4, destination: 3, isMutated: false)])
+					diffTest(previous: [0, 1, 2, 3, 4],
+					         current: [2, 3, 0, 4],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [1],
+					                             moves: [Changeset.Move(source: 0, destination: 2, isMutated: false),
+					                                     Changeset.Move(source: 2, destination: 0, isMutated: false),
+					                                     Changeset.Move(source: 3, destination: 1, isMutated: false),
+					                                     Changeset.Move(source: 4, destination: 3, isMutated: false)]),
+					         areEqual: ==)
 				}
 			}
 
 			describe("insertions and moves") {
 				it("should reflect a move and an insertion") {
-					expect(Changeset(previous: "EABDFGHIJ".characters,
-					                 current:  "ABCDEFGHIJ".characters))
-						== Changeset(inserts: [2],
-						             removals: [],
-						             moves: [Changeset.Move(source: 1, destination: 0, isMutated: false),
-						                     Changeset.Move(source: 2, destination: 1, isMutated: false),
-						                     Changeset.Move(source: 0, destination: 4, isMutated: false),
-						                     Changeset.Move(source: 0, destination: 4, isMutated: false),
-						                     Changeset.Move(source: 4, destination: 5, isMutated: false),
-						                     Changeset.Move(source: 5, destination: 6, isMutated: false),
-						                     Changeset.Move(source: 6, destination: 7, isMutated: false),
-						                     Changeset.Move(source: 7, destination: 8, isMutated: false),
-						                     Changeset.Move(source: 8, destination: 9, isMutated: false)])
+					diffTest(previous: "EABDFGHIJ".characters,
+					         current:  "ABCDEFGHIJ".characters,
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [2],
+					                             removals: [],
+					                             moves: [Changeset.Move(source: 1, destination: 0, isMutated: false),
+					                                     Changeset.Move(source: 2, destination: 1, isMutated: false),
+					                                     Changeset.Move(source: 0, destination: 4, isMutated: false),
+					                                     Changeset.Move(source: 0, destination: 4, isMutated: false),
+					                                     Changeset.Move(source: 4, destination: 5, isMutated: false),
+					                                     Changeset.Move(source: 5, destination: 6, isMutated: false),
+					                                     Changeset.Move(source: 6, destination: 7, isMutated: false),
+					                                     Changeset.Move(source: 7, destination: 8, isMutated: false),
+					                                     Changeset.Move(source: 8, destination: 9, isMutated: false)]),
+					         areEqual: ==)
 				}
 			}
 		}
@@ -694,9 +744,28 @@ class ChangesetSpec: QuickSpec {
 						let newObjects = (Array(objects.dropLast(16)) + (0 ..< 128).map { _ in ObjectValue() }).shuffled()
 
 						reproducibilityTest(applying: Changeset(previous: objects, current: newObjects),
-											to: objects,
-											expecting: newObjects,
-											areEqual: ===)
+						                    to: objects,
+						                    expecting: newObjects,
+						                    areEqual: ===)
+					}
+				}
+			}
+
+			describe("custom identifier and custom content") {
+				it("should produce a snapshot that can be reproduced from the previous snapshot by applying the changeset") {
+					_measureAndStart(times: 256) {
+						let objects = Array(0 ..< 256).map { $0 --> $0 }.shuffled()
+						let newObjects = (Array(objects.dropLast(16)) + (0 ..< 128).map { $0 --> $0 })
+							.shuffled()
+							.map { pair -> Pair<Int, Int> in
+								let random = Int(arc4random())
+								return pair.key --> (random % 3 == 0 ? pair.value : random)
+							}
+
+						reproducibilityTest(applying: Changeset(previous: objects, current: newObjects),
+						                    to: objects,
+						                    expecting: newObjects,
+						                    areEqual: ==)
 					}
 				}
 			}
