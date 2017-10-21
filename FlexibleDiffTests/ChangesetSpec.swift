@@ -285,6 +285,14 @@ class ChangesetSpec: QuickSpec {
 
 		describe("diffing") {
 			describe("insertions") {
+				it("should reflect an insertion to an empty collection") {
+					diffTest(previous: [],
+					         current: [0],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(inserts: [0]),
+					         areEqual: ==)
+				}
+
 				it("should reflect an insertion at the beginning") {
 					diffTest(previous: [0, 1, 2, 3],
 					         current: [10, 0, 1, 2, 3],
@@ -370,6 +378,14 @@ class ChangesetSpec: QuickSpec {
 			}
 
 			describe("deletions") {
+				it("should reflect a removal from a single-element collection") {
+					diffTest(previous: [0],
+					         current: [],
+					         computed: { Changeset(previous: $0, current: $1) },
+					         expected: Changeset(removals: [0]),
+					         areEqual: ==)
+				}
+
 				it("should reflect a removal at the beginning") {
 					diffTest(previous: [0, 1, 2, 3],
 					         current: [1, 2, 3],

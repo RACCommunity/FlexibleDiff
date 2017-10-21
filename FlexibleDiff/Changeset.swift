@@ -210,7 +210,7 @@ public struct Changeset {
 		}
 
 		// Pass 5: Mark adjacent lines as direct moves.
-		for newPosition in 0 ..< (newCount - 1) {
+		for newPosition in 0 ..< max(newCount - 1, 0) {
 			guard case let .remote(oldPosition) = newReferences[newPosition],
 			      oldPosition + 1 < oldCount,
 			      oldIdentifiers[oldPosition + 1] == newIdentifiers[newPosition + 1],
@@ -226,7 +226,7 @@ public struct Changeset {
 		}
 
 		// Pass 6: Mark adjacent lines as direct moves.
-		for oldPosition in 0 ..< (oldCount - 1) {
+		for oldPosition in 0 ..< max(oldCount - 1, 0) {
 			guard case let .remote(newPosition) = oldReferences[oldPosition],
 			      newPosition + 1 < newCount,
 			      oldIdentifiers[oldPosition + 1] == newIdentifiers[newPosition + 1],
