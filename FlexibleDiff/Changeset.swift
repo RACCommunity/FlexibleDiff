@@ -98,7 +98,11 @@ public struct Changeset {
 	///              start index and the offset.
 	public var mutations = IndexSet()
 
-	/// The offset pairs of moves with a mutation flag as the associated value.
+	/// The offset pairs of moves.
+	///
+	/// These represent only the required moves for reproducing the current version from the
+	/// previous version — moves being implied by preceding removals and insertions could
+	/// have been eliminated as an optimization.
 	///
 	/// The source offset is semantically equivalent to a removal offset, while the
 	/// destination offset is semantically equivalent to an insertion offset.
