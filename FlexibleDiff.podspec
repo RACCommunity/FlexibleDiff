@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "FlexibleDiff"
-  s.version      = "0.0.1"
+  s.version      = "0.0.2"
   s.summary      = "A Swift collection diffing μframework."
   s.description  = <<-DESC
                    A Swift collection diffing μframework implementing the O(N) Paul Heckel diff algorithm.
