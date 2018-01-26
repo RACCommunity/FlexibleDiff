@@ -61,6 +61,9 @@ github "RACCommunity/FlexibleDiff"
 pod "FlexibleDiff"
 ```
 
+## The Example App
+The Xcode workspace includes an example app using FlexibleDiff. Be sure to run `git submodule update --init` to fetch the dependencies before building the app target in Xcode.
+
 ## Note on the algorithm
 The implementation is evolved from the popular O(n) diff algorithm by Paul
 Heckel, in [his 1978 paper "A technique for isolating differences between files"](https://dl.acm.org/citation.cfm?id=359467).
