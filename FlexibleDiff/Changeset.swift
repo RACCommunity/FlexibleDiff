@@ -127,8 +127,8 @@ public struct Changeset {
 	public init<C: Collection, Identifier: Hashable>(
 		previous: C?,
 		current: C,
-		identifier: (C.Iterator.Element) -> Identifier,
-		areEqual: (C.Iterator.Element, C.Iterator.Element) -> Bool
+		identifier: (C.Element) -> Identifier,
+		areEqual: (C.Element, C.Element) -> Bool
 	) {
 		guard let previous = previous else {
 			self.init(initial: current)
@@ -257,8 +257,14 @@ public struct Changeset {
 				continue
 			}
 
-			let previousIndex = previous.index(previous.startIndex, offsetBy: C.IndexDistance(oldPosition))
-			let currentIndex = current.index(current.startIndex, offsetBy: C.IndexDistance(newPosition))
+			#if swift(>=4.1)
+				let previousIndex = previous.index(previous.startIndex, offsetBy: oldPosition)
+				let currentIndex = current.index(current.startIndex, offsetBy: newPosition)
+			#else
+				let previousIndex = previous.index(previous.startIndex, offsetBy: C.IndexDistance(oldPosition))
+				let currentIndex = current.index(current.startIndex, offsetBy: C.IndexDistance(newPosition))
+			#endif
+
 			let isMutated = !areEqual(previous[previousIndex], current[currentIndex])
 
 			if newPosition - oldPosition != 0 {
@@ -315,8 +321,8 @@ public struct Changeset {
 	public init<C: Collection, Identifier: Hashable>(
 		previous: C?,
 		current: C,
-		identifier: (C.Iterator.Element) -> Identifier
-	) where C.Iterator.Element: Equatable {
+		identifier: (C.Element) -> Identifier
+	) where C.Element: Equatable {
 		self.init(previous: previous, current: current, identifier: identifier, areEqual: ==)
 	}
 
@@ -334,7 +340,7 @@ public struct Changeset {
 	public init<C: Collection>(
 		previous: C?,
 		current: C
-	) where C.Iterator.Element: Hashable {
+	) where C.Element: Hashable {
 		self.init(previous: previous, current: current, identifier: { $0 }, areEqual: ==)
 	}
 
@@ -350,7 +356,7 @@ public struct Changeset {
 	public init<C: Collection>(
 		previous: C?,
 		current: C
-	) where C.Iterator.Element: AnyObject {
+	) where C.Element: AnyObject {
 		self.init(previous: previous, current: current, identifier: ObjectIdentifier.init, areEqual: ===)
 	}
 
@@ -371,7 +377,7 @@ public struct Changeset {
 		previous: C?,
 		current: C,
 		comparingBy strategy: ObjectDiffStrategy = .value
-	) where C.Iterator.Element: AnyObject & Equatable {
+	) where C.Element: AnyObject & Equatable {
 		switch strategy.kind {
 		case .value:
 			self.init(previous: previous, current: current, identifier: ObjectIdentifier.init, areEqual: ==)
@@ -399,7 +405,7 @@ public struct Changeset {
 		current: C,
 		identifyingBy identifyingStrategy: ObjectDiffStrategy = .identity,
 		comparingBy comparingStrategy: ObjectDiffStrategy = .value
-	) where C.Iterator.Element: AnyObject & Hashable {
+	) where C.Element: AnyObject & Hashable {
 		switch (identifyingStrategy.kind, comparingStrategy.kind) {
 		case (.value, .value):
 			self.init(previous: previous, current: current, identifier: { $0 }, areEqual: ==)

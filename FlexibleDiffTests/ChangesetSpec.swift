@@ -268,8 +268,8 @@ class ChangesetSpec: QuickSpec {
 				                                        moves: [.init(source: 2, destination: 6, isMutated: true),
 				                                                .init(source: 3, destination: 8, isMutated: false),
 				                                                .init(source: 5, destination: 2, isMutated: false)]),
-				                    to:        "abcdefgh".characters,
-				                    expecting: "YBfeZgChd".characters)
+				                    to:        "abcdefgh",
+				                    expecting: "YBfeZgChd")
 			}
 
 			it("should reproduce all the operations") {
@@ -278,8 +278,8 @@ class ChangesetSpec: QuickSpec {
 				                                        moves: [Changeset.Move(source: 1, destination: 0, isMutated: false),
 				                                                Changeset.Move(source: 2, destination: 1, isMutated: false),
 				                                                Changeset.Move(source: 0, destination: 4, isMutated: false)]),
-				                    to:        "EABDFGHIJ".characters,
-				                    expecting: "ABCDEFGHIJ".characters)
+				                    to:        "EABDFGHIJ",
+				                    expecting: "ABCDEFGHIJ")
 			}
 		}
 
@@ -353,8 +353,8 @@ class ChangesetSpec: QuickSpec {
 				}
 
 				it("should detect inserted repeated values") {
-					diffTest(previous: "AAA".characters,
-					         current: "AAAAA".characters,
+					diffTest(previous: "AAA",
+					         current: "AAAAA",
 					         computed: { Changeset(previous: $0, current: $1) },
 					         expected: Changeset(inserts: [3, 4]),
 					         areEqual: ==)
@@ -362,8 +362,8 @@ class ChangesetSpec: QuickSpec {
 
 				it("should detect inserted, scattered repeated values") {
 					// NOTE: This is not the most ideal changeset.
-					diffTest(previous: "WAXAYAZ".characters,
-					         current:  "AWAXAAYAZA".characters,
+					diffTest(previous: "WAXAYAZ",
+					         current:  "AWAXAAYAZA",
 					         computed: { Changeset(previous: $0, current: $1) },
 					         expected: Changeset(inserts: [5, 7, 9],
 					                             moves: [.init(source: 6, destination: 8, isMutated: false),
@@ -445,8 +445,8 @@ class ChangesetSpec: QuickSpec {
 				}
 
 				it("should detect removed repeated values") {
-					diffTest(previous: "AAAAA".characters,
-					         current: "AAA".characters,
+					diffTest(previous: "AAAAA",
+					         current: "AAA",
 					         computed: { Changeset(previous: $0, current: $1) },
 					         expected: Changeset(removals: [3, 4]),
 					         areEqual: ==)
@@ -685,8 +685,8 @@ class ChangesetSpec: QuickSpec {
 
 			describe("insertions and moves") {
 				it("should reflect a move and an insertion") {
-					diffTest(previous: "EABDFGHIJ".characters,
-					         current:  "ABCDEFGHIJ".characters,
+					diffTest(previous: "EABDFGHIJ",
+					         current:  "ABCDEFGHIJ",
 					         computed: { Changeset(previous: $0, current: $1) },
 					         expected: Changeset(inserts: [2],
 					                             removals: [],
@@ -732,9 +732,9 @@ class ChangesetSpec: QuickSpec {
 
 				it("should produce a snapshot that can be reproduced from the previous snapshot by applying the changeset, even if the collection is bidirectional") {
 					_measureAndStart(times: 256) {
-						let oldCharacters = "abcdefghijkl12345~!@%^&*()_-+=".characters.shuffled()
-						var newCharacters = oldCharacters.dropLast(8)
-						newCharacters.append(contentsOf: "mnopqrstuvwxyz67890#".characters)
+						let oldCharacters = "abcdefghijkl12345~!@%^&*()_-+=".shuffled()
+						var newCharacters = String(oldCharacters.dropLast(8))
+						newCharacters.append(contentsOf: "mnopqrstuvwxyz67890#")
 						newCharacters = newCharacters.shuffled()
 
 						reproducibilityTest(applying: Changeset(previous: oldCharacters,
@@ -746,9 +746,9 @@ class ChangesetSpec: QuickSpec {
 
 				it("should produce a snapshot that can be reproduced from the previous snapshot by applying the changeset, even if the collection is bidirectional and is a multiset") {
 					_measureAndStart(times: 256) {
-						let oldCharacters = "abcdefghijkl12345~!@%^&*()_-+=abcdefghijkl12345~!@%^&*()_-+=".characters.shuffled()
-						var newCharacters = oldCharacters.dropLast(8)
-						newCharacters.append(contentsOf: "mnopqrstuvwxyz67890#".characters)
+						let oldCharacters = "abcdefghijkl12345~!@%^&*()_-+=abcdefghijkl12345~!@%^&*()_-+=".shuffled()
+						var newCharacters = String(oldCharacters.dropLast(8))
+						newCharacters.append(contentsOf: "mnopqrstuvwxyz67890#")
 						newCharacters = newCharacters.shuffled()
 
 						reproducibilityTest(applying: Changeset(previous: oldCharacters,
@@ -849,8 +849,8 @@ private func reproducibilityTest<C: RangeReplaceableCollection>(
 
 	// (1) Perform removals (including move sources).
 	for range in removals.rangeView.reversed() {
-		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
-		let upperBound = values.index(lowerBound, offsetBy: C.IndexDistance(range.count))
+		let lowerBound = values.index(values.startIndex, offsetBy: numericCast(range.lowerBound))
+		let upperBound = values.index(lowerBound, offsetBy: numericCast(range.count))
 		values.removeSubrange(lowerBound ..< upperBound)
 	}
 
@@ -859,20 +859,21 @@ private func reproducibilityTest<C: RangeReplaceableCollection>(
 		let removalOffset = removals.count(in: 0 ..< range.lowerBound)
 		let insertOffset = inserts.count(in: 0 ... range.lowerBound)
 
-		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound - removalOffset))
-		let upperBound = values.index(lowerBound, offsetBy: C.IndexDistance(range.count))
-		let copyLowerBound = current.index(current.startIndex, offsetBy: C.IndexDistance(range.lowerBound - removalOffset + insertOffset))
-		let copyUpperBound = current.index(copyLowerBound, offsetBy: C.IndexDistance(range.count))
+		let lowerBound = values.index(values.startIndex, offsetBy: numericCast(range.lowerBound - removalOffset))
+		let upperBound = values.index(lowerBound, offsetBy: numericCast(range.count))
+		let copyLowerBound = current.index(current.startIndex, offsetBy: numericCast(range.lowerBound - removalOffset + insertOffset))
+		let copyUpperBound = current.index(copyLowerBound, offsetBy: numericCast(range.count))
 		values.replaceSubrange(lowerBound ..< upperBound,
 		                       with: current[copyLowerBound ..< copyUpperBound])
 	}
 
 	// (3) Perform insertions (including move destinations).
 	for range in inserts.rangeView {
-		let lowerBound = values.index(values.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
-		let copyLowerBound = current.index(current.startIndex, offsetBy: C.IndexDistance(range.lowerBound))
-		let copyUpperBound = current.index(copyLowerBound, offsetBy: C.IndexDistance(range.count))
-		values.insert(contentsOf: current[copyLowerBound ..< copyUpperBound], at: lowerBound)
+		let lowerBound = values.index(values.startIndex, offsetBy: numericCast(range.lowerBound))
+		let copyLowerBound = current.index(current.startIndex, offsetBy: numericCast(range.lowerBound))
+		let copyUpperBound = current.index(copyLowerBound, offsetBy: numericCast(range.count))
+		values.insert(contentsOf: current[copyLowerBound ..< copyUpperBound],
+					  at: lowerBound)
 	}
 
 	expect(values, file: file, line: line).to(equal(current, original: previous, changeset: changeset, by: areEqual))
@@ -903,8 +904,8 @@ private extension RangeReplaceableCollection {
 
 		for i in 0 ..< Int(elements.count) {
 			let distance = randomInteger() % Int(elements.count)
-			let random = elements.index(elements.startIndex, offsetBy: IndexDistance(distance))
-			let index = elements.index(elements.startIndex, offsetBy: IndexDistance(i))
+			let random = elements.index(elements.startIndex, offsetBy: numericCast(distance))
+			let index = elements.index(elements.startIndex, offsetBy: numericCast(i))
 			guard random != index else { continue }
 
 			let temp = elements[index]
