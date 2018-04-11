@@ -112,6 +112,11 @@ public struct Changeset {
 	///              start index and the move offsets.
 	public var moves = [Move]()
 
+	/// Indicate whether there is no change across both versions of the collection.
+	public var hasNoChanges: Bool {
+		return inserts.isEmpty && removals.isEmpty && mutations.isEmpty && moves.isEmpty
+	}
+
 	public init() {}
 
 	public init(inserts: IndexSet = [], removals: IndexSet = [], mutations: IndexSet = [], moves: [Move] = []) {
