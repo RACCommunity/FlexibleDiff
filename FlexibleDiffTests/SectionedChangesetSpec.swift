@@ -293,7 +293,7 @@ private func reproducibilityTest(
 
 	let mutatedMoves = Set(changeset.sections.moves.lazy
 		.filter { $0.isMutated }
-		.flatMap { Tuple2($0.source, $0.destination) })
+		.compactMap { Tuple2($0.source, $0.destination) })
 	let mutatedSections = Set(changeset.sections.mutations.map { Tuple2($0, $0) })
 		.union(mutatedMoves)
 	let records = Set(changeset.mutatedSections.map { Tuple2($0.source, $0.destination) })
