@@ -784,7 +784,7 @@ class ChangesetSpec: QuickSpec {
 								return pair.key --> (random % 3 == 0 ? pair.value : random)
 							}
 
-						reproducibilityTest(applying: Changeset(previous: objects, current: newObjects),
+						reproducibilityTest(applying: Changeset(previous: objects, current: newObjects, identifier: { $0.key }),
 						                    to: objects,
 						                    expecting: newObjects,
 						                    areEqual: ==)

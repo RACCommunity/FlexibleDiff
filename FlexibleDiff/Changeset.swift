@@ -140,7 +140,7 @@ public struct Changeset {
 			return
 		}
 
-		var table: [Identifier: DiffEntry] = Dictionary(minimumCapacity: Int(current.count))
+		var table: [Identifier: UnsafeMutablePointer<DiffEntry>] = Dictionary(minimumCapacity: Int(current.count))
 
 		var oldIdentifiers = ContiguousArray(previous.map(identifier))
 		var newIdentifiers = ContiguousArray(current.map(identifier))
@@ -150,16 +150,23 @@ public struct Changeset {
 
 		let oldCount = oldIdentifiers.count
 		let newCount = newIdentifiers.count
+		let totalCount = oldCount + newCount
 
 		oldReferences.reserveCapacity(oldCount)
 		newReferences.reserveCapacity(newCount)
 
-		func tableEntry(for identifier: Identifier) -> DiffEntry {
+		let preallocatedEntryBuffer = UnsafeMutablePointer<DiffEntry>.allocate(capacity: totalCount)
+		var allocatedCount = 0
+
+		func tableEntry(for identifier: Identifier) -> UnsafeMutablePointer<DiffEntry> {
 			if let entry = table[identifier] {
 				return entry
 			}
 
-			let entry = DiffEntry()
+			let entry = preallocatedEntryBuffer + allocatedCount
+			entry.initialize(to: DiffEntry())
+			allocatedCount += 1
+			assert(allocatedCount <= totalCount)
 			table[identifier] = entry
 			return entry
 		}
@@ -168,7 +175,7 @@ public struct Changeset {
 		for offset in 0 ..< newCount {
 			let entry = tableEntry(for: newIdentifiers[offset])
 
-			entry.occurenceInNew += 1
+			entry.pointee.occurenceInNew += 1
 			newReferences.append(.table(entry))
 		}
 
@@ -176,7 +183,7 @@ public struct Changeset {
 		for offset in 0 ..< oldCount {
 			let entry = tableEntry(for: oldIdentifiers[offset])
 
-			entry.locationsInOld.insert(offset)
+			entry.pointee.locationsInOld.insert(offset)
 			oldReferences.append(.table(entry))
 		}
 
@@ -184,8 +191,8 @@ public struct Changeset {
 		for newPosition in 0 ..< newCount {
 			switch newReferences[newPosition] {
 			case let .table(entry):
-				if entry.occurenceInNew == 1 && entry.locationsInOld.count == 1 {
-					let oldPosition = entry.locationsInOld.first!
+				if entry.pointee.occurenceInNew == 1 && entry.pointee.locationsInOld.count == 1 {
+					let oldPosition = entry.pointee.locationsInOld.first!
 					newReferences[newPosition] = .remote(oldPosition)
 					oldReferences[oldPosition] = .remote(newPosition)
 				}
@@ -200,16 +207,16 @@ public struct Changeset {
 		// Pass 4: Pair repeated values, and compute insertions.
 		for newPosition in 0 ..< newCount {
 			guard case let .table(entry) = newReferences[newPosition] else { continue }
-			if let closestOld = entry.locationsInOld.closest(to: newPosition) {
+			if let closestOld = entry.pointee.locationsInOld.closest(to: newPosition) {
 				// Pull the closest old location from the all unassigned known old
 				// locations of this entry. Then remove this instance from the table
 				// entry, so that the unpaired instance would be identified by Pass 7
 				// as removals.
-				entry.locationsInOld.remove(closestOld)
-				entry.occurenceInNew -= 1
+				entry.pointee.locationsInOld.remove(closestOld)
+				entry.pointee.occurenceInNew -= 1
 				newReferences[newPosition] = .remote(closestOld)
 				oldReferences[closestOld] = .remote(newPosition)
-			} else if entry.occurenceInNew > 0 {
+			} else if entry.pointee.occurenceInNew > 0 {
 				// If no old location is left, it is treated as an inserted element.
 				inserts.insert(newPosition)
 			}
@@ -221,14 +228,14 @@ public struct Changeset {
 			      oldPosition + 1 < oldCount,
 			      oldIdentifiers[oldPosition + 1] == newIdentifiers[newPosition + 1],
 			      case let .table(entry) = newReferences[newPosition + 1],
-			      entry.locationsInOld.contains(oldPosition + 1) else {
+			      entry.pointee.locationsInOld.contains(oldPosition + 1) else {
 				continue
 			}
 
 			newReferences[newPosition + 1] = .remote(oldPosition + 1)
 			oldReferences[oldPosition + 1] = .remote(newPosition + 1)
-			entry.occurenceInNew -= 1
-			entry.locationsInOld.remove(oldPosition + 1)
+			entry.pointee.occurenceInNew -= 1
+			entry.pointee.locationsInOld.remove(oldPosition + 1)
 		}
 
 		// Pass 6: Mark adjacent lines as direct moves.
@@ -237,19 +244,19 @@ public struct Changeset {
 			      newPosition + 1 < newCount,
 			      oldIdentifiers[oldPosition + 1] == newIdentifiers[newPosition + 1],
 			      case let .table(entry) = newReferences[newPosition + 1],
-			      entry.locationsInOld.contains(oldPosition + 1) else {
+			      entry.pointee.locationsInOld.contains(oldPosition + 1) else {
 				continue
 			}
 
 			newReferences[newPosition + 1] = .remote(oldPosition + 1)
 			oldReferences[oldPosition + 1] = .remote(newPosition + 1)
-			entry.occurenceInNew -= 1
-			entry.locationsInOld.remove(oldPosition + 1)
+			entry.pointee.occurenceInNew -= 1
+			entry.pointee.locationsInOld.remove(oldPosition + 1)
 		}
 
 		// Pass 7: Compute removals. Prepare removal offsets for move elimination.
 		for oldPosition in 0 ..< oldCount {
-			if case let .table(entry) = oldReferences[oldPosition], entry.occurenceInNew == 0 {
+			if case let .table(entry) = oldReferences[oldPosition], entry.pointee.occurenceInNew == 0 {
 				removals.insert(oldPosition)
 			}
 		}
@@ -310,6 +317,9 @@ public struct Changeset {
 
 		// Pass 11: Forge the move results.
 		moves = movePaths.map { Changeset.Move(source: $0.source, destination: $0.destination, isMutated: $1) }
+
+		preallocatedEntryBuffer.deinitialize(count: allocatedCount)
+		preallocatedEntryBuffer.deallocate()
 	}
 
 	/// Compute the difference of `self` with regard to `old` by value equality.
@@ -454,14 +464,14 @@ extension Changeset {
 // updated with the latest messages pushed from the backend. So our diffing algorithm
 // must have an additional mean to test elements for value equality.
 
-private final class DiffEntry {
+private struct DiffEntry {
 	var occurenceInNew: UInt = 0
 	var locationsInOld = Set<Int>()
 }
 
 private enum DiffReference {
 	case remote(Int)
-	case table(DiffEntry)
+	case table(UnsafeMutablePointer<DiffEntry>)
 }
 
 private struct MovePath: Hashable {
