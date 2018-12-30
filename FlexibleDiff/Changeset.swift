@@ -456,7 +456,7 @@ extension Changeset {
 
 private final class DiffEntry {
 	var occurenceInNew: UInt = 0
-	var locationsInOld = IndexSet()
+	var locationsInOld = Set<Int>()
 }
 
 private enum DiffReference {
@@ -490,10 +490,10 @@ private struct MovePath: Hashable {
 	}
 #endif
 
-extension IndexSet {
+extension Set where Element == Int {
 	fileprivate func closest(to integer: Int) -> Int? {
 		guard !isEmpty else { return nil }
-		return integerLessThanOrEqualTo(integer) ?? integerGreaterThan(integer)
+		return self.min { abs($0 - integer) < abs($1 - integer) }
 	}
 }
 
