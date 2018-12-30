@@ -212,7 +212,7 @@ class SectionedChangesetSpec: QuickSpec {
 	}
 }
 
-struct Section {
+struct Section: Equatable {
 	var identifier: String
 	var metadata: String
 	var items: [Item]
@@ -225,21 +225,9 @@ struct Section {
 }
 
 extension Section {
-	struct Item {
+	struct Item: Equatable {
 		var identifier: String
 		var value: Int
-	}
-}
-
-extension Section: Equatable {
-	static func == (lhs: Section, rhs: Section) -> Bool {
-		return lhs.identifier == rhs.identifier && lhs.metadata == rhs.metadata && lhs.items == rhs.items
-	}
-}
-
-extension Section.Item: Equatable {
-	static func == (lhs: Section.Item, rhs: Section.Item) -> Bool {
-		return lhs.identifier == rhs.identifier && lhs.value == rhs.value
 	}
 }
 
@@ -298,7 +286,9 @@ private func reproducibilityTest(
 		.union(mutatedMoves)
 	let records = Set(changeset.mutatedSections.map { Tuple2($0.source, $0.destination) })
 
-	expect(records) == mutatedSections
+	// [BUG] It seems occasionally `Set.==` is not being picked up.
+	//       Nimble 7.3.1.
+	expect(records).to(equal(mutatedSections))
 
 	for record in changeset.mutatedSections {
 		values[record.destination].metadata = current[record.destination].metadata
@@ -318,13 +308,5 @@ struct Tuple2<L: Hashable, R: Hashable>: Hashable {
 	init(_ lhs: L, _ rhs: R) {
 		self.lhs = lhs
 		self.rhs = rhs
-	}
-
-	var hashValue: Int {
-		return lhs.hashValue ^ rhs.hashValue
-	}
-
-	static func == (lhs: Tuple2<L, R>, rhs: Tuple2<L, R>) -> Bool {
-		return lhs.lhs == rhs.lhs && lhs.rhs == rhs.rhs
 	}
 }

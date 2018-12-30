@@ -885,13 +885,9 @@ private extension RangeReplaceableCollection {
 
 private class ObjectValue {}
 
-private struct Pair<Key: Hashable, Value: Equatable>: Hashable, CustomStringConvertible {
+private struct Pair<Key: Hashable, Value: Hashable>: Hashable, CustomStringConvertible {
 	var key: Key
 	var value: Value
-
-	var hashValue: Int {
-		return key.hashValue
-	}
 
 	var description: String {
 		return "\(key) --> \(value)"
@@ -900,10 +896,6 @@ private struct Pair<Key: Hashable, Value: Equatable>: Hashable, CustomStringConv
 	init(key: Key, value: Value) {
 		self.key = key
 		self.value = value
-	}
-
-	static func ==(left: Pair<Key, Value>, right: Pair<Key, Value>) -> Bool {
-		return left.key == right.key && left.value == right.value
 	}
 }
 
