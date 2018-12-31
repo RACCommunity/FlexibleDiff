@@ -82,11 +82,11 @@ public struct SectionedChangeset {
 	) {
 		let metadata = Changeset(previous: previous, current: current, identifier: sectionIdentifier, areEqual: areMetadataEqual)
 
-		let moveSourceLookup = Dictionary(uniqueKeysWithValues: metadata.moves.lazy.map { ($0.destination, $0.source) })
+		let moveDestinationLookup = Dictionary(uniqueKeysWithValues: metadata.moves.lazy.map { ($0.source, $0.destination) })
 		let mutatedMoveDests = Set(metadata.moves.lazy.filter { $0.isMutated }.map { $0.destination })
 
-		let allInsertions = metadata.inserts.union(IndexSet(moveSourceLookup.keys))
-		let allRemovals = metadata.removals.union(IndexSet(moveSourceLookup.values))
+		let allInsertions = metadata.inserts.union(IndexSet(moveDestinationLookup.values))
+		let allRemovals = metadata.removals.union(IndexSet(moveDestinationLookup.keys))
 
 		mutatedSections = Array()
 		mutatedSections.reserveCapacity(Int(current.count))
@@ -94,22 +94,32 @@ public struct SectionedChangeset {
 		var moves: [Changeset.Move] = []
 		var mutations = IndexSet()
 
-		for (offset, section) in current.enumerated() where !metadata.inserts.contains(offset) {
-			let predeletionOffset: Int
+		for (sourceOffset, section) in previous.enumerated() where !metadata.removals.contains(sourceOffset) {
+			let destinationOffset: Int
 			let isMove: Bool
 
-			if let moveSource = moveSourceLookup[offset] {
-				predeletionOffset = moveSource
+			if let moveDestination = moveDestinationLookup[sourceOffset] {
+				destinationOffset = moveDestination
 				isMove = true
 			} else {
-				let preinsertionOffset = offset - allInsertions.count(in: 0 ..< offset)
-				predeletionOffset = preinsertionOffset + allRemovals.count(in: 0 ... preinsertionOffset)
+				let postRemovalOffset = sourceOffset - allRemovals.count(in: 0 ..< sourceOffset)
+
+				var insertionsBeforeOffset = 0
+				for insertion in allInsertions {
+					if insertion <= postRemovalOffset + insertionsBeforeOffset {
+						insertionsBeforeOffset += 1
+					} else {
+						break
+					}
+				}
+
+				destinationOffset = postRemovalOffset + insertionsBeforeOffset
 				isMove = false
 			}
 
-			let previousIndex = previous.index(previous.startIndex, offsetBy: numericCast(predeletionOffset))
-			let previousItems = items(previous[previousIndex])
-			let currentItems = items(section)
+			let previousItems = items(section)
+			let currentIndex = current.index(current.startIndex, offsetBy: numericCast(destinationOffset))
+			let currentItems = items(current[currentIndex])
 
 			let changeset = Changeset(previous: previousItems,
 			                          current: currentItems,
@@ -117,22 +127,22 @@ public struct SectionedChangeset {
 			                          areEqual: areItemsEqual)
 
 			let isMutated = !changeset.hasNoChanges
-				|| metadata.mutations.contains(predeletionOffset)
-				|| mutatedMoveDests.contains(offset)
+				|| metadata.mutations.contains(sourceOffset)
+				|| mutatedMoveDests.contains(destinationOffset)
 
 			if isMutated {
-				let section = SectionedChangeset.MutatedSection(source: predeletionOffset,
-				                                                destination: offset,
-				                                                changeset: changeset)
+				let section = SectionedChangeset.MutatedSection(source: sourceOffset,
+                                                                destination: destinationOffset,
+                                                                changeset: changeset)
 				mutatedSections.append(section)
 			}
 
 			if isMove {
-				moves.append(Changeset.Move(source: predeletionOffset,
-				                            destination: offset,
-				                            isMutated: isMutated))
+				moves.append(Changeset.Move(source: sourceOffset,
+                                            destination: destinationOffset,
+                                            isMutated: isMutated))
 			} else if isMutated {
-				mutations.insert(predeletionOffset)
+				mutations.insert(sourceOffset)
 			}
 		}
 

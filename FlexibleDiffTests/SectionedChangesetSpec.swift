@@ -39,6 +39,52 @@ class SectionedChangesetSpec: QuickSpec {
 					)
 				)
 			}
+
+			it("should reflect only removed sections") {
+				diffTest(
+					previous: [
+						Section(identifier: "A", items: [Section.Item(identifier: "A0", value: .max)]),
+						Section(identifier: "B", items: [Section.Item(identifier: "B0", value: .max)]),
+						Section(identifier: "C", items: [Section.Item(identifier: "C0", value: .max)]),
+						Section(identifier: "D", items: [Section.Item(identifier: "D0", value: .max)])
+					],
+					current: [
+						Section(identifier: "C", items: [Section.Item(identifier: "C0", value: .max)])
+					],
+					expected: SectionedChangeset(
+						sections: Changeset(removals: [0, 1, 3]),
+						mutatedSections: []
+					)
+				)
+			}
+		}
+
+		describe("insertions and moves") {
+			it("should reflect three inserted sections and two moves") {
+				diffTest(
+					previous: [
+						Section(identifier: "A", items: [Section.Item(identifier: "A0", value: .max)]),
+						Section(identifier: "B", items: [Section.Item(identifier: "B0", value: .max)]),
+						Section(identifier: "C", items: [Section.Item(identifier: "C0", value: .max)])
+					],
+					current: [
+						Section(identifier: "B", items: [Section.Item(identifier: "B0", value: .max)]),
+						Section(identifier: "D", items: [Section.Item(identifier: "D0", value: .max)]),
+						Section(identifier: "C", items: [Section.Item(identifier: "C0", value: .max)]),
+						Section(identifier: "E", items: [Section.Item(identifier: "E0", value: .max)]),
+						Section(identifier: "F", items: [Section.Item(identifier: "F0", value: .max)]),
+						Section(identifier: "A", items: [Section.Item(identifier: "A0", value: .max)])
+					],
+					expected: SectionedChangeset(
+						sections: Changeset(inserts: [1, 3, 4],
+											moves: [
+												Changeset.Move(source: 0, destination: 5, isMutated: false),
+												Changeset.Move(source: 1, destination: 0, isMutated: false)
+											]),
+						mutatedSections: []
+					)
+				)
+			}
 		}
 
 		describe("removal and insertion duo") {
