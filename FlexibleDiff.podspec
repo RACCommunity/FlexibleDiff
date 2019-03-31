@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "FlexibleDiff"
-  s.version      = "0.0.7"
+  s.version      = "0.0.8"
   s.summary      = "A Swift collection diffing μframework."
   s.description  = <<-DESC
                    A Swift collection diffing μframework implementing the O(N) Paul Heckel diff algorithm.
@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/RACCommunity/FlexibleDiff.git", :tag => "#{s.version}" }
   
   s.source_files  = "FlexibleDiff/*.{swift}"
-  s.swift_version = "4.0"
+  s.swift_version = "5.0"
 end

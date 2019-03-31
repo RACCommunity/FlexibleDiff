@@ -1,5 +1,5 @@
 language: objective-c
-osx_image: xcode10
+osx_image: xcode10.2
 install: true
 branches:
   only:
@@ -14,7 +14,7 @@ cache:
 
 jobs:
   include:
-    - osx_image: xcode10
+    - osx_image: xcode10.2
       script:
         - XCODE_SCHEME=FlexibleDiff-macOS
           XCODE_SDK=macosx
