@@ -468,12 +468,6 @@ private struct MovePath: Hashable {
 	let source: Int
 	let destination: Int
 
-	func hash(into hasher: inout Hasher) {
-		let sum = source + destination
-		let hash = (sum * (sum + 1)) >> 1 + destination
-		hasher.combine(hash)
-	}
-
 	func shifted(by offset: Int) -> MovePath {
 		return MovePath(source: source + offset, destination: destination + offset)
 	}
@@ -499,9 +493,8 @@ extension Set where Element == Int {
 
 extension Changeset.Move: Hashable {
 	public func hash(into hasher: inout Hasher) {
-		let sum = source + destination
-		let hash = (sum * (sum + 1)) >> 1 + destination
-		hasher.combine(hash)
+		hasher.combine(source)
+		hasher.combine(destination)
 	}
 
 	public static func == (left: Changeset.Move, right: Changeset.Move) -> Bool {
