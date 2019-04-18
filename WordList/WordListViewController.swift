@@ -26,7 +26,7 @@ class WordListViewController: UIViewController {
 		tableView.dataSource = self
 		tableView.delegate = self
 		tableView.estimatedRowHeight = 44.0
-		tableView.rowHeight = UITableViewAutomaticDimension
+		tableView.rowHeight = UITableView.automaticDimension
 	}
 
     override func viewDidLoad() {
@@ -45,7 +45,7 @@ class WordListViewController: UIViewController {
 		viewModel.userDidTapActionButton()
 	}
 
-	override func motionEnded(_ motion: UIEventSubtype, with event: UIEvent?) {
+	override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
 		super.motionEnded(motion, with: event)
 
 		if motion == .motionShake {

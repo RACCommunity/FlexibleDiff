@@ -62,7 +62,7 @@ final class WordListViewModel {
 			completion(true)
 
 			self.update { words in
-				guard let index = words.index(where: { $0.identifier == word.identifier })
+				guard let index = words.firstIndex(where: { $0.identifier == word.identifier })
 					else { return }
 				words[index] = word.updating(input)
 			}
@@ -71,7 +71,7 @@ final class WordListViewModel {
 
 	func deleteWord(_ word: Word) -> Bool {
 		return update { words in
-			guard let index = words.index(where: { $0.identifier == word.identifier })
+			guard let index = words.firstIndex(where: { $0.identifier == word.identifier })
 				else { return false }
 			words.remove(at: index)
 			return true
@@ -116,24 +116,5 @@ final class WordListViewModel {
 
 		output?.update(Snapshot(previous: previous, current: words, changeset: changeset))
 		return result
-	}
-}
-
-private extension RangeReplaceableCollection {
-	func shuffled() -> Self {
-		var elements = self
-
-		for i in 0 ..< Int(elements.count) {
-			let distance = Int(arc4random() >> 1) % Int(elements.count)
-			let random = elements.index(elements.startIndex, offsetBy: IndexDistance(distance))
-			let index = elements.index(elements.startIndex, offsetBy: IndexDistance(i))
-			guard random != index else { continue }
-
-			let temp = elements[index]
-			elements.replaceSubrange(index ..< elements.index(after: index), with: CollectionOfOne(elements[random]))
-			elements.replaceSubrange(random ..< elements.index(after: random), with: CollectionOfOne(temp))
-		}
-
-		return elements
 	}
 }

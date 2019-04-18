@@ -4,7 +4,7 @@ class WordCell: UITableViewCell {
 	private let wordLabel: UILabel
 	private let uuidLabel: UILabel
 
-	override init(style: UITableViewCellStyle, reuseIdentifier: String?) {
+	override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
 		wordLabel = UILabel()
 		uuidLabel = UILabel()
 
